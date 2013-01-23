@@ -1,22 +1,22 @@
 {
     "api": {
-        "port": 4010,
+        "port": 8000,
         "host": "localhost",
         "log": null
     },
     "oauth": {
-        "token": "jrXT6xSAIJnN8geFWtzt9Q",
-        "secret": "b5qHxxCy0gDccuGGHZYVNw205QsSw3NLqu8JQIEMs"
+        "token": "Twitter API OAuth token key",
+        "secret": "Twitter API OAuth token secret"
     },
     "database": {
-        "name": "twitter",
-        "username": "zvm",
-        "password": "39572685",
+        "name": "scrapy-db",
+        "username": "scrapy",
+        "password": "0123456789",
         "host": "localhost",
         "port": 5432,
         "commit_delay": 10,
-        "limit_table": "t2_limit",
-        "tweet_table": "t2_tweet",
-        "jsons_table": "t2_tweet_json"
+        "limit_table": "limits",
+        "tweet_table": "tweets",
+        "jsons_table": "tweet_json"
     }
 }
