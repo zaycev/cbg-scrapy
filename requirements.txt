@@ -6,6 +6,6 @@ twisted
 sqlalchemy
 anyjson
 argparse
-dateutil
+python-dateutil
 git+git://github.com/geoalchemy/geoalchemy2.git
 git+git://github.com/zaycev/twforce.git
