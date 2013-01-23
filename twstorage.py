@@ -54,7 +54,6 @@ class TwStorage(object):
             __tablename__ = settings["database"]["tweet_table"]
             id = Column(BigInteger, primary_key=True)
             user_id = Column(BigInteger, nullable=False)
-            filter_id = Column(Integer, nullable=False)
             timestamp = Column(DateTime, default=datetime.datetime.now())
             text = Column(String(140), nullable=False)
             geo = Column(Geometry(geometry_type='POINT', srid=4326), nullable=True)
@@ -112,7 +111,6 @@ def save(cache):
                 tweet = STORAGE.Tweet(
                     id=obj["id"],
                     user_id=obj["user"]["id"],
-                    filter_id=filter_id,
                     timestamp=ts.replace(tzinfo=STORAGE.tz),
                     text=text
                 )
