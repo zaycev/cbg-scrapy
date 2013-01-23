@@ -25,10 +25,7 @@ class TwStorage(object):
         from sqlalchemy.ext.declarative import declarative_base
         from sqlalchemy import BigInteger, MetaData, Column, Integer, String
         from sqlalchemy import Text
-
         from geoalchemy2 import Geometry
-
-        from gambit.settings import DATABASES
 
         passwd = settings["database"]["password"]
         user = settings["database"]["username"]
