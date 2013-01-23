@@ -1,0 +1,10 @@
+pytz
+psycopg2
+oauth2
+pyOpenSSL
+twisted
+sqlalchemy
+anyjson
+argparse
+git+git://github.com/geoalchemy/geoalchemy2.git
+git+git://github.com/zaycev/twforce.git
