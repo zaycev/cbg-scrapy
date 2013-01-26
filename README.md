@@ -110,7 +110,7 @@ $ python scrapy.py [-p <http API port>] [-l <path to log file>]
 		"message": "Error message"
 	}
 	```
-### Ping
+* ### Ping
 
 	Returns string `pong`.
 	
@@ -128,9 +128,8 @@ $ python scrapy.py [-p <http API port>] [-l <path to log file>]
 	pong
 	```
 
-### Log
-
-
+* ### Log
+	
 	Returns log string.
 	
 	URI: `/log/`
