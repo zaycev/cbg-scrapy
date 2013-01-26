@@ -20,7 +20,7 @@ $ python scrapy.py [-p <http API port>] [-l <path to log file>]
 	
 	GET parameters:
 	
-	```js
+	```json
 	data:
 	[
 		{
@@ -65,7 +65,7 @@ $ python scrapy.py [-p <http API port>] [-l <path to log file>]
 		{
 			"name": "LA scraper",
 			"token": "<Twitter's OAuth token>",
-			"status": "connecting" | "connected" | "failed"
+			"status": "connecting" | "connected" | "failed",
 			"ts_start": "2012.12.12T12:12:00",
 			"received": 10000,
 			"total_received": 100000,
@@ -76,20 +76,20 @@ $ python scrapy.py [-p <http API port>] [-l <path to log file>]
 			"filter": {
 				"track": ["#Python", "#Haskell"],
 				"follow": [1, 2, 4],
-				"locations" [0, 0, 0, 0],
+				"locations" [0, 0, 0, 0]
 			},
 			"errors": [
 				{
 					"message": "error message",
 					"ts": "2012.12.12T12:12:00"
 				}
-			],
+			]
 		}
 	]
 	```
 * ### Removing scrapers
 	
-	Stops and removes 	active scrapers.
+	Stops and removes active scrapers.
 	
 	URI: `/remove/`
 	
@@ -126,4 +126,17 @@ $ python scrapy.py [-p <http API port>] [-l <path to log file>]
 	
 	```
 	pong
+	```
+
+### Log
+
+
+	Returns log string.
+	
+	URI: `/log/`
+	
+	GET parameters:
+	
+	```
+	none
 	```
