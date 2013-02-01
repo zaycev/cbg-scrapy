@@ -8,6 +8,7 @@
 
 import os
 import sys
+import logging
 import datetime
 import argparse
 import traceback
@@ -21,9 +22,12 @@ from twisted.python import log
 from twisted.internet import reactor
 from twisted.web import server, resource
 from twisted.internet.task import LoopingCall
+from twisted.python.logfile import DailyLogFile
 from twforce.streams import TwClientFactory, TwHandler, connect_api
 
-VERSION = "2.1"
+global LOG_FILE
+
+VERSION = "2.1.1"
 
 
 def read_settings(filepath="scrapy-settings.json"):
@@ -52,13 +56,15 @@ class TweetHandler(TwHandler):
     def connection_made(self):
         self.scraper.status = self.scraper.Status.CONNECTED
         self.scraper.ts_connect = datetime.datetime.utcnow()
-        log.msg("Connection made %r" % self.scraper)
+        log.msg("Connection made %r" % self.scraper,
+                logLevel=logging.WARNING)
 
     def connection_lost(self, reason):
         self.scraper.received = 0
         self.scraper.limits = 0
         self.scraper.status = self.scraper.Status.FAILED
-        log.msg("Connection lost %r\nReason:%r" % (self.scraper, reason))
+        log.msg("Connection lost %r\nReason:%r" % (self.scraper, reason),
+                logLevel=logging.WARNING)
 
     def handle(self, line):
         try:
@@ -108,7 +114,7 @@ class ScraperState(object):
         return iso_time(self.ts_start)
 
     def connect(self, consumer):
-        log.msg("Connect %r" % self)
+        log.msg("Connect %r" % self, logLevel=logging.DEBUG)
         if not self.factory:
             self.factory = TwClientFactory.filter_streamer(
                 consumer,
@@ -124,7 +130,7 @@ class ScraperState(object):
             self.connector = connect_api(self.factory)
 
     def disconnect(self):
-        log.msg("Disconnect %r" % self)
+        log.msg("Disconnect %r" % self, logLevel=logging.DEBUG)
         if self.connector:
             self.connector.disconnect()
             self.factory.stopTrying()
@@ -209,7 +215,7 @@ class ScrapyAPI(resource.Resource):
 
     def render_GET(self, request):
         try:
-            log.msg("Handle request: %s" % request.path)
+            log.msg("Handle request: %s" % request.path, logLevel=logging.DEBUG)
             request.setHeader("Content-Type", "application/json")
 
             if request.path == "/add/":
@@ -227,15 +233,22 @@ class ScrapyAPI(resource.Resource):
                 return json.dumps(response)
             elif request.path == "/ping/":
                 return "pong"
+            elif request.path == "/log/":
+                logfile = open("log/daily-log.log")
+                log_message = logfile.read()
+                logfile.close()
+                return log_message
             else:
-                log.msg("Error: wrong API path '%s'" % request.path)
+                log.msg("Wrong API path '%s'" % request.path,
+                        logLevel=logging.DEBUG)
                 return json.dumps({
                     "error": True,
                     "message": "Wrong API path '%s'" % request.path,
                 })
 
         except Exception:
-            log.msg("Error: %s" % traceback.format_exc())
+            log.msg("Error: %s" % traceback.format_exc(),
+                    logLevel=logging.WARNING)
             return json.dumps({
                 "error": True,
                 "message": traceback.format_exc(),
@@ -273,28 +286,28 @@ DB: %s@%s:%s/%s\n
 if __name__ == "__main__":
     settings = read_settings()
     port = settings["api"].get("port", 8000) if "api" in settings else 8000
-    log_file = settings["api"].get("log", None) if "api" in settings else None
-    log_file = open(log_file, "w") if log_file else sys.stderr
-    
     parser = argparse.ArgumentParser()
     parser.add_argument("-p", "--port", default=port, type=int,
                         help="HTTP API port")
-    parser.add_argument("-l", "--log", type=str, default=None,
+    parser.add_argument("-l", "--log", type=int, default=1,
                         help="Log-file")
     args = parser.parse_args()
     api_port = args.port
-    log_file = open(args.log, "w") if args.log else log_file
-    MSG = MSG %\
-          (VERSION,
-           datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
-           api_port,
-           log_file,
-           os.getpid(),
-           settings["database"]["username"],
-           settings["database"]["host"],
-           settings["database"]["port"],
-           settings["database"]["name"],
-           )
+    log_file = "daily-log.log" if args.log else sys.stderr
+    log_file = log_file
+    if log_file is not sys.stderr:
+        log_file = DailyLogFile(log_file, "%s/log" % os.getcwd())
+    MSG = MSG % (
+        VERSION,
+        datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
+        api_port,
+        log_file,
+        os.getpid(),
+        settings["database"]["username"],
+        settings["database"]["host"],
+        settings["database"]["port"],
+        settings["database"]["name"],
+    )
     sys.stdout.write(MSG)
     consumer = make_oauth_consumer(settings)
     log.startLogging(log_file)

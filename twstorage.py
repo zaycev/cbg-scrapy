@@ -80,8 +80,8 @@ def init(settings):
 def save(cache):
     try:
         global STORAGE
-        
-        print "collected", len(cache)
+
+        print "collected: %s " % len(cache)
 
         limits = []
         tweets = []
