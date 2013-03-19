@@ -76,6 +76,7 @@ class TweetHandler(TwHandler):
         except Exception:
             pass
 
+
 class ScraperState(object):
 
     class Status(object):
@@ -139,7 +140,7 @@ class ScraperState(object):
         self.received += 1
         self.total_received += 1
         self.cache.append((self.token.key, self.filter_id, tweet))
-        self.last_received = datetime.datetime.utcnow()
+        self.last_received = datetime.datetime.now()
 
     def add_limit(self, limit):
         limit_value = 0
@@ -152,8 +153,10 @@ class ScraperState(object):
 
     def get_rate(self):
         d = (datetime.datetime.utcnow() - self.ts_connect).seconds
-        return float(self.received) / d * 60
-
+        if d > 0:
+            return float(self.received) / d * 60
+        return 0.0
+    
     def __repr__(self):
         return u"<Scraper(name=%s, token=%s)>" % (self.name, self.token.key)
 
@@ -166,7 +169,7 @@ class ScrapyAPI(resource.Resource):
         self.scrapers = {}
         self.consumer = consumer
         self.cache = deque([])
-        init = lambda : twstorage.init(read_settings())
+        init = lambda: twstorage.init(read_settings())
         self.storage_worker = multiprocessing.Pool(processes=1,
                                                    initializer=init)
 
@@ -179,8 +182,8 @@ class ScrapyAPI(resource.Resource):
             location = tuple(param["filter"]["location"])
             name = param["name"]
             if token.key not in self.scrapers:
-                filter = dict(location=location, id=param["filter"]["id"])
-                new_scraper = ScraperState(name, token, filter, self.cache)
+                flt = dict(location=location, id=param["filter"]["id"])
+                new_scraper = ScraperState(name, token, flt, self.cache)
                 self.scrapers[token.key] = new_scraper
                 new_scraper.connect(self.consumer)
 

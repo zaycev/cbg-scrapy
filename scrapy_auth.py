@@ -20,9 +20,7 @@
 # limitations under the License.
 
 
-import sys
 import json
-import argparse
 import oauth2 as oauth
 
 
@@ -37,8 +35,6 @@ SIGNIN_URL = "https://api.twitter.com/oauth/authenticate"
 json_file = open("scrapy-settings.json", "r")
 settings = json.loads(json_file.read())
 json_file.close()
-
-
 
 consumer_key = settings["oauth"]["token"]
 consumer_secret = settings["oauth"]["secret"]
