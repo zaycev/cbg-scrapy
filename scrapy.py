@@ -136,6 +136,20 @@ class ScraperState(object):
             self.connector.disconnect()
             self.factory.stopTrying()
 
+    def reconnect(self, consumer):
+        self.factory.stopTrying()
+        self.connector.disconnect()
+        log.msg("Reconnect %r" % self, logLevel=logging.DEBUG)
+        self.factory = TwClientFactory.filter_streamer(
+            consumer,
+            self.token,
+            self.handler,
+            location=self.filter.get("location", []),
+            track=self.filter.get("track", []),
+            follow=self.filter.get("follow", []),
+        )
+        self.connector = connect_api(self.factory)
+
     def add_tweet(self, tweet):
         self.received += 1
         self.total_received += 1
@@ -172,7 +186,6 @@ class ScrapyAPI(resource.Resource):
         init = lambda: twstorage.init(read_settings())
         self.storage_worker = multiprocessing.Pool(processes=1,
                                                    initializer=init)
-
     def __add_scrapers__(self, param_list):
         for param in param_list:
             token = oauth.Token(
@@ -188,7 +201,16 @@ class ScrapyAPI(resource.Resource):
                 new_scraper.connect(self.consumer)
 
         return {"success": True}
-
+    
+    def restart_scrapers(self):
+        for scraper in self.scrapers.itervalues():
+            scraper.reconnect(self.consumer)
+            
+    def restart_failed_scrapers(self):
+        for scraper in self.scrapers.itervalues():
+            if scraper.status == ScraperState.Status.FAILED:
+                scraper.reconnect(self.consumer)
+    
     def __remove_scrapers__(self, params):
         for t in params:
             scraper = self.scrapers.get(t)
@@ -268,6 +290,17 @@ def collect_received(api):
         api.storage_worker.map_async(twstorage.save, [collected])
 
 
+def restart_scrapers(api):
+    api.restart_scrapers()
+    log.msg("Scrapers has been restarted (%s)" % len(api.__list_scrapers__()))
+
+
+def restart_failed_scrapers(api):
+    api.restart_failed_scrapers()
+    log.msg("Failed scrapes has been restarted")
+    
+
+
 MSG = \
 """
 \n\n
@@ -317,8 +350,16 @@ if __name__ == "__main__":
     api = ScrapyAPI(consumer)
     site = server.Site(api)
     reactor.listenTCP(api_port, site)
-    lc = LoopingCall(lambda: collect_received(api))
-    lc.start(settings["database"]["commit_delay"])
+
+    lc1  = LoopingCall(lambda: collect_received(api))
+    lc1.start(settings["database"]["commit_delay"])
+
+    lc2 = LoopingCall(lambda: restart_scrapers(api))
+    lc2.start(1800)
+
+    lc3 = LoopingCall(lambda: restart_failed_scrapers(api))
+    lc3.start(30)
+    
     reactor.run()
 
     log_file.close()

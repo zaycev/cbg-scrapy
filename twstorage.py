@@ -12,6 +12,25 @@ import datetime
 import anyjson as json
 
 global STORAGE
+global SQL_MOVE
+
+
+SQL_MOVE = \
+"""
+BEGIN WORK;
+LOCK TABLE t2_tmp_tweet IN SHARE ROW EXCLUSIVE MODE;
+UPDATE t2_tmp_tweet SET status=1 WHERE STATUS=0;
+INSERT INTO t2_tweet (
+    SELECT id, user_id, timestamp, text, geo 
+    FROM t2_tmp_tweet
+    WHERE status = 1
+);
+UPDATE t2_tmp_tweet SET status=2 WHERE STATUS=1;
+DELETE FROM t2_tmp_tweet WHERE status=2 and timestamp < current_date - interval '7 days';
+COMMIT WORK;
+"""
+
+
 
 
 class TwStorage(object):
@@ -36,7 +55,7 @@ class TwStorage(object):
         db_url = "postgresql+psycopg2://%s:%s@%s:%s/%s" % \
                  (user, passwd, host, port, name)
 
-        self.engine = create_engine(db_url, echo=False)
+        self.engine = create_engine(db_url, echo=True, pool_size=8, pool_recycle=1800)
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
 
@@ -80,6 +99,7 @@ def init(settings):
 def save(cache):
     try:
         global STORAGE
+        global SQL_MOVE
 
         print "collected: %s " % len(cache)
 
@@ -131,6 +151,8 @@ def save(cache):
         STORAGE.session.add_all(tweets)
         STORAGE.session.add_all(tjsons)
         STORAGE.session.commit()
+        
+        STORAGE.engine.execute(SQL_MOVE)
 
     except Exception:
         import traceback
